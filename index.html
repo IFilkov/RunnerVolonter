@@ -168,12 +168,24 @@
     //     }
     //   });
     // }
+    function checkCollisionWithHero(spectator) {
+      // Проверяем, пересекаются ли круги (герой и зритель) используя теорему Пифагора
+      let dx = hero.x - spectator.x;
+      let dy = hero.y - spectator.y;
+      let distance = Math.sqrt(dx * dx + dy * dy);
+
+      // Если расстояние между центрами кругов меньше суммы радиусов, произошла коллизия
+      return distance < hero.radius + spectator.radius;
+    }
     let startX = 100; // X координата начала строчки сидений
     let startY = 200; // Y координата начала строчки сидений
     function updateSpectators() {
       spectators.forEach((spectator) => {
         if (!spectator.isSeated) {
           // Если у зрителя нет целевого места, находим для него свободное место
+          if (!spectator.isSeated && checkCollisionWithHero(spectator)) {
+            spectator.color = 'green'; // При коллизии перекрашиваем зрителя в зеленый
+          }
           if (spectator.targetSeat === -1) {
             spectator.targetSeat = findFreeSeat();
           }
@@ -210,10 +222,6 @@
         }
       });
     }
-
-
-
-
 
     function updateHeroPosition() {
       if (keysPressed['ArrowLeft']) hero.x -= hero.speed;
