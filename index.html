@@ -54,15 +54,6 @@
       }
     }
 
-    // Функция поиска свободного места
-    // function findFreeSeat() {
-    //   let freeSeatIndex;
-    //   do {
-    //     freeSeatIndex = Math.floor(Math.random() * seats.length);
-    //   } while (seats[freeSeatIndex]); // пропускаем занятые
-    //   seats[freeSeatIndex] = true; // помечаем место как занятое
-    //   return freeSeatIndex;
-    // }
     function findFreeSeat() {
       const availableSeatsIndices = seats
         .map((taken, index) => ({ taken, index }))
@@ -104,24 +95,6 @@
       ctx.fill();
     }
 
-    // function initializeSpectators() {
-    //   let entranceX = canvas.width - 30;
-    //   for (let i = 0; i < 108; i++) {
-    //     let entranceY = (i % 2 === 0)
-    //       ? 260 // Для верхнего входа
-    //       : canvas.height - 30; // Для нижнего входа
-    //     spectators.push({
-    //       x: entranceX,
-    //       y: entranceY,
-    //       radius: 8,
-    //       color: 'orange',
-    //       speed: Math.random() * 0.4 + 0.2, // Случайная скорость от 0.5 до 2.5
-    //       targetSeat: findFreeSeat(),
-    //       isSeated: false,
-    //       isMovingVertically: (i % 2 === 0), // Направление движения вверх или вниз
-    //     });
-    //   }
-    // }
     let potentialSpectators = []; // Массив для зрителей, ожидающих появления
     let spectatorInterval; // Будем хранить ссылку на интервал
 
@@ -131,7 +104,7 @@
       let upperEntranceY = 250; // Высота на холсте для верхнего входа.
       let lowerEntranceY = canvas.height - 60; // Высота на холсте для нижнего входа.
       // Инициализируем потенциальных зрителей
-      for (let i = 0; i < 108; i++) { // 108 зрителей, как последний уменьшенный на 40% объем
+      for (let i = 0; i < 180; i++) { // 108 зрителей, как последний уменьшенный на 40% объем
         let y = i % 2 === 0 ? upperEntranceY : lowerEntranceY // чередуем входы
         potentialSpectators.push({
           x: entranceX,
@@ -160,77 +133,86 @@
         }
       }, 1000); // Добавляем нового зрителя каждую секунду
     }
+
     // function updateSpectators() {
     //   spectators.forEach(spectator => {
     //     if (!spectator.isSeated) {
-    //       let targetRow = Math.floor(spectator.targetSeat / 20);
-    //       let targetCol = spectator.targetSeat % 20;
-    //       let targetX = 100 + targetCol * (15 + 5);
-    //       let targetY = 200 + targetRow * (15 + 15);
-
-    //       // Если зритель не в своем ряду - двигаемся вертикально
-    //       if (spectator.isMovingVertically) {
-    //         let dy = targetY - spectator.y;
-    //         spectator.y += Math.sign(dy) * spectator.speed; // Движение по вертикали
-
-    //         // Добавляем случайное горизонтальное отклонение в движении
-    //         spectator.x += (Math.random() - 0.5) * 5;
-
-    //         // Проверяем достиг ли зритель своего ряда
-    //         if (Math.abs(dy) < spectator.speed * 2) {
-    //           spectator.isMovingVertically = false; // Теперь будет двигаться горизонтально
-    //         }
+    //       if (spectator.targetSeat === -1) {
+    //         // Если свободных мест нет, зритель остается у входа
+    //         spectator.targetSeat = findFreeSeat();
     //       } else {
+    //         // Если свободное место есть, зритель движется к нему
+    //         let targetRow = Math.floor(spectator.targetSeat / 20);
+    //         let targetCol = spectator.targetSeat % 20;
+    //         let targetX = 100 + targetCol * (15 + 5);
+    //         let targetY = 200 + targetRow * (15 + 5);
     //         // Движение по горизонтали к месту
     //         let dx = targetX - spectator.x;
     //         spectator.x += Math.sign(dx) * spectator.speed;
 
+    //         spectator.x += Math.sign(targetX - spectator.x) * spectator.speed;
+    //         spectator.y += Math.sign(targetY - spectator.y) * spectator.speed;
     //         // Добавляем случайное вертикальное отклонение в движении
     //         spectator.y += (Math.random() - 0.5) * 5;
-    //       }
 
-    //       // Занимаем место, когда добираемся до него
-    //       if (Math.abs(spectator.x - targetX) < 1 && Math.abs(spectator.y - targetY) < 1) {
-    //         seats[spectator.targetSeat] = true; // Маркируем место как занятое
-    //         spectator.isSeated = true;
+    //         // Проверяем, достиг ли зритель своего места
+    //         let reachedTargetX = Math.abs(spectator.x - targetX) < 1;
+    //         let reachedTargetY = Math.abs(spectator.y - targetY) < 1;
+
+    //         if (reachedTargetX && reachedTargetY) {
+    //           // Занимаем место, когда добираемся до него
+    //           seats[spectator.targetSeat] = true;
+    //           spectator.isSeated = true;
+    //         }
     //       }
     //     }
     //   });
     // }
+    let startX = 100; // X координата начала строчки сидений
+    let startY = 200; // Y координата начала строчки сидений
     function updateSpectators() {
-      spectators.forEach(spectator => {
+      spectators.forEach((spectator) => {
         if (!spectator.isSeated) {
+          // Если у зрителя нет целевого места, находим для него свободное место
           if (spectator.targetSeat === -1) {
-            // Если свободных мест нет, зритель остается у входа
             spectator.targetSeat = findFreeSeat();
-          } else {
-            // Если свободное место есть, зритель движется к нему
+          }
+
+          // Если свободное место не найдено (все места заняты), зритель останется на месте
+          if (spectator.targetSeat !== -1) {
+            let seatWidth = 15;
+            let seatHeight = 15;
+            let seatGap = 5; // Промежуток между сидениями
+            let rowGap = seatHeight; // Промежуток между рядами
+
             let targetRow = Math.floor(spectator.targetSeat / 20);
             let targetCol = spectator.targetSeat % 20;
-            let targetX = 100 + targetCol * (15 + 5);
-            let targetY = 200 + targetRow * (15 + 5);
-            // Движение по горизонтали к месту
-            let dx = targetX - spectator.x;
-            spectator.x += Math.sign(dx) * spectator.speed;
+            let targetX = startX + targetCol * (seatWidth + seatGap);
+            let targetY = startY + targetRow * (seatHeight + seatGap + rowGap);
 
-            spectator.x += Math.sign(targetX - spectator.x) * spectator.speed;
-            spectator.y += Math.sign(targetY - spectator.y) * spectator.speed;
-            // Добавляем случайное вертикальное отклонение в движении
+            // Двигаем зрителя к его целевому сидению
+            if (Math.abs(spectator.x - targetX) > spectator.speed) {
+              spectator.x += Math.sign(targetX - spectator.x) * spectator.speed;
+            }
+            if (Math.abs(spectator.y - targetY) > spectator.speed) {
+              spectator.y += Math.sign(targetY - spectator.y) * spectator.speed;
+            }
             spectator.y += (Math.random() - 0.5) * 5;
-
             // Проверяем, достиг ли зритель своего места
-            let reachedTargetX = Math.abs(spectator.x - targetX) < 1;
-            let reachedTargetY = Math.abs(spectator.y - targetY) < 1;
-
-            if (reachedTargetX && reachedTargetY) {
-              // Занимаем место, когда добираемся до него
-              seats[spectator.targetSeat] = true;
-              spectator.isSeated = true;
+            if (
+              Math.abs(spectator.x - targetX) < 1 &&
+              Math.abs(spectator.y - targetY) < 1
+            ) {
+              seats[spectator.targetSeat] = true; // Место занято
+              spectator.isSeated = true; // Зритель сел
             }
           }
         }
       });
     }
+
+
+
 
 
     function updateHeroPosition() {
