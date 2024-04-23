@@ -33,6 +33,18 @@
         speed: 2,
       };
 
+      let enemy = null;
+
+      function createEnemy() {
+        enemy = {
+          x: 250,
+          y: 250,
+          radius: 8,
+          speed: 1.5,
+          color: "#000000",
+        };
+      }
+
       function drawSeats(startX, startY, rows, cols) {
         let seatWidth = 15;
         let seatHeight = 15;
@@ -101,6 +113,15 @@
         ctx.beginPath();
         ctx.arc(hero.x, hero.y, hero.radius, 0, Math.PI * 2, true);
         ctx.fill();
+      }
+
+      function drawEnemy() {
+        if (enemy) {
+          ctx.fillStyle = enemy.color;
+          ctx.beginPath();
+          ctx.arc(enemy.x, enemy.y, enemy.radius, 0, Math.PI * 2);
+          ctx.fill();
+        }
       }
 
       let potentialSpectators = []; // Массив для зрителей, ожидающих появления
@@ -261,22 +282,47 @@
         });
       }
 
+      function updateEnemyPosition() {
+        if (!enemy) return;
+
+        // Находим направление к герою
+        let dx = hero.x - enemy.x;
+        let dy = hero.y - enemy.y;
+        let distance = Math.sqrt(dx * dx + dy * dy);
+        let vx = (dx / distance) * enemy.speed;
+        let vy = (dy / distance) * enemy.speed;
+
+        // Обновляем позицию врага, чтобы он преследовал героя
+        enemy.x += vx;
+        enemy.y += vy;
+      }
       function gameLoop() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         drawStage(100, 50, 600, 100);
         drawSeats(100, 200, 10, 20);
         drawEntrance(canvas.width - 30, 250, 15, 35); // Верхний вход
         drawEntrance(canvas.width - 30, canvas.height - 50, 15, 35); // Нижний вход
-        // drawEntrance(canvas.width - 20, 200, 100, 30, 2);
         drawSpectators();
         updateSpectators();
         updateHeroPosition();
+        updateEnemyPosition(); // Обновляем позицию врага
+
+        // Создаем врага, если условие выполняется
+        if (nonCollidedSpectators >= 20 && !enemy) {
+          createEnemy();
+          console.log("Check!");
+        }
+
+        // Отрисовываем героя и врага после их обновления
         drawHero();
+        drawEnemy();
+
         // Отрисовка счетчиков
         ctx.fillStyle = "#000";
         ctx.font = "20px Arial";
         ctx.fillText(`Collided: ${collidedSpectators}`, 10, 20);
         ctx.fillText(`Non-collided: ${nonCollidedSpectators}`, 10, 40);
+
         requestAnimationFrame(gameLoop);
       }
 
