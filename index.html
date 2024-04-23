@@ -25,8 +25,6 @@
       let keysPressed = {};
       let seats = new Array(200).fill(false);
       let spectators = [];
-      let collidedSpectators = 0; // Количество зрителей, вошедших в коллизию с героем
-      let nonCollidedSpectators = 0; // Количество зрителей, не вошедших в коллизию с героем
 
       let hero = {
         x: canvas.width - 245,
@@ -188,24 +186,17 @@
         // Если расстояние между центрами кругов меньше суммы радиусов, произошла коллизия
         return distance < hero.radius + spectator.radius;
       }
+      let collidedSpectators = 0;
+      let nonCollidedSpectators = 0;
       let startX = 100; // X координата начала строчки сидений
       let startY = 200; // Y координата начала строчки сидений
       function updateSpectators() {
         spectators.forEach((spectator) => {
           if (!spectator.isSeated) {
-            // Если у зрителя нет целевого места, находим для него свободное место
-            if (!spectator.isSeated && checkCollisionWithHero(spectator)) {
-              spectator.color = "green"; // При коллизии перекрашиваем зрителя в зеленый
-              collidedSpectators++; // Увеличиваем счетчик вошедших в коллизию зрителей
-            } else {
-              nonCollidedSpectators++; // Увеличиваем счетчик не вошедших в коллизию зрителей
-            }
-
             if (spectator.targetSeat === -1) {
               spectator.targetSeat = findFreeSeat();
             }
 
-            // Если свободное место не найдено (все места заняты), зритель останется на месте
             if (spectator.targetSeat !== -1) {
               let seatWidth = 15;
               let seatHeight = 15;
@@ -228,6 +219,7 @@
                   Math.sign(targetY - spectator.y) * spectator.speed;
               }
               spectator.y += (Math.random() - 0.5) * 5;
+
               // Проверяем, достиг ли зритель своего места
               if (
                 Math.abs(spectator.x - targetX) < 1 &&
@@ -235,6 +227,14 @@
               ) {
                 seats[spectator.targetSeat] = true; // Место занято
                 spectator.isSeated = true; // Зритель сел
+
+                // Проверяем коллизию только когда зритель занимает свое место
+                if (checkCollisionWithHero(spectator)) {
+                  spectator.color = "green"; // При коллизии перекрашиваем зрителя в зеленый
+                  collidedSpectators++; // Увеличиваем счетчик вошедших в коллизию зрителей
+                } else {
+                  nonCollidedSpectators++; // Увеличиваем счетчик не вошедших в коллизию зрителей
+                }
               }
             }
           }
