@@ -137,6 +137,7 @@
       let upperEntranceY = 250; // Высота на холсте для верхнего входа.
       let lowerEntranceY = canvas.height - 60; // Высота на холсте для нижнего входа.
       // Инициализируем потенциальных зрителей
+
       if (findFreeSeat() !== -1) {
         for (let i = 0; i < 180; i++) {
           let y = i % 2 === 0 ? upperEntranceY : lowerEntranceY;
@@ -223,7 +224,7 @@
 
     let collidedSpectators = 0;
     let nonCollidedSpectators = 0;
-    let heroCollisionCounter = 600;
+    let heroCollisionCounter = 60;
     let startX = 100; // X координата начала строчки сидений
     let startY = 200; // Y координата начала строчки сидений
 
@@ -385,15 +386,17 @@
 
     function resetGame() {
       // Сбрасываем все переменные и счетчики в начальное состояние
+      potentialSpectators = [];
       collidedSpectators = 0;
       nonCollidedSpectators = 0;
-      heroCollisionCounter = 600; // Возвращаем счетчик коллизий героя с врагом к изначальному значению
+      heroCollisionCounter = 60000; // Возвращаем счетчик коллизий героя с врагом к изначальному значению
       hero.x = canvas.width - 245; // Возвращаем героя в изначальную позицию
       hero.y = 350;
       enemy = null; // Убираем врага с поля
 
       // Очищаем массив сидений
       seats.fill(false);
+      // seats = new Array(200).fill(false);
 
       // Удаляем всех зрителей и перезапускаем их генерацию
       spectators = [];
@@ -416,6 +419,7 @@
       updateEnemyPosition();
       updateHeroCollisionCounter();
 
+      // количество пропущеных зрителей после которых выходит охранник
       if (nonCollidedSpectators >= 2 && !enemy) {
         createEnemy();
         console.log("Check!");
