@@ -1,6 +1,6 @@
 <!-- текущий код -->
 <!-- структурированный код, мультиввод -->
-<!-- два врага -->
+<!-- 2 врага -->
 
 <!DOCTYPE html>
 <html>
@@ -320,6 +320,11 @@
       if (enemy && checkCollisionWithEnemy(hero, enemy)) {
         console.log("Ooops!");
       }
+      // Проверяем коллизию с вторым врагом
+      if (enemy2 && checkCollisionWithEnemy(hero, enemy2)) {
+        console.log("Oops, collided with enemy2!");
+        // Добавьте здесь действия при коллизии с вторым врагом, например, сброс игры или уменьшение очков здоровья героя
+      }
       // Проверяем коллизии с зрителями
       spectators.forEach((spectator) => {
         if (!spectator.isSeated && checkCollisionWithHero(spectator)) {
@@ -425,10 +430,11 @@
       potentialSpectators = [];
       collidedSpectators = 0;
       nonCollidedSpectators = 0;
-      heroCollisionCounter = 60000; // Возвращаем счетчик коллизий героя с врагом к изначальному значению
+      heroCollisionCounter = 600; // Возвращаем счетчик коллизий героя с врагом к изначальному значению
       hero.x = canvas.width - 245; // Возвращаем героя в изначальную позицию
       hero.y = 350;
       enemy = null; // Убираем врага с поля
+      enemy2 = null;
 
       // Очищаем массив сидений
       seats.fill(false);
@@ -447,6 +453,14 @@
           resetGame();
         }
       }
+      // Проверяем коллизию с вторым врагом
+      if (enemy2 && checkCollisionWithEnemy(hero, enemy2)) {
+        heroCollisionCounter--; // Уменьшаем счетчик при коллизии с врагом
+        if (heroCollisionCounter <= 0) {
+          // Если счетчик достиг нуля или меньше, перезапускаем игру
+          resetGame();
+        }
+      }
     }
 
     function updateGame() {
@@ -459,12 +473,15 @@
       // количество пропущеных зрителей после которых выходит охранник
       if (nonCollidedSpectators >= 2 && !enemy) {
         createEnemy();
+        console.log("Check!");
+      }
+      if (nonCollidedSpectators >= 4 && !enemy2) {
         createEnemy2();
         console.log("Check!");
       }
 
       let collidedSpectator = checkCollisionWithSpectators(enemy);
-      if (collidedSpectator) {
+      if (collidedSpectator !== null) {
         followingSpectator = collidedSpectator;
         startFollowingTimer();
       }
@@ -533,11 +550,6 @@
         }, 1000 / 60);
       });
     }
-
-
-
-
-
 
     function handleInput() {
       handleMouseInput();
