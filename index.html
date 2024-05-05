@@ -1,5 +1,7 @@
 <!-- текущий код -->
-<!-- структурированный код, всё работает -->
+<!-- структурированный код, мультиввод -->
+<!-- два врага -->
+
 <!DOCTYPE html>
 <html>
 
@@ -37,6 +39,7 @@
     };
 
     let enemy = null;
+    let enemy2 = null;
 
     function createEnemy() {
       enemy = {
@@ -45,6 +48,16 @@
         radius: 8,
         speed: 1.5,
         color: "#000000",
+      };
+    }
+
+    function createEnemy2() {
+      enemy2 = {
+        x: 150,
+        y: 150,
+        radius: 8,
+        speed: 2.5,
+        color: "#FF0000",
       };
     }
 
@@ -127,6 +140,15 @@
       }
     }
 
+    function drawEnemy2() {
+      if (enemy2) {
+        ctx.fillStyle = enemy2.color;
+        ctx.beginPath();
+        ctx.arc(enemy2.x, enemy2.y, enemy2.radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
     let potentialSpectators = []; // Массив для зрителей, ожидающих появления
     let spectatorInterval; // Будем хранить ссылку на интервал
     let spectatorIdCounter = 0; // Счетчик для уникальных идентификаторов зрителей
@@ -186,6 +208,7 @@
       // Отрисовка героя и врага
       drawHero();
       drawEnemy();
+      drawEnemy2();
 
       // Отрисовка счетчиков и других элементов интерфейса
       ctx.fillStyle = "#000";
@@ -357,6 +380,19 @@
       });
     }
 
+    function updateEnemy2Position() {
+      if (!enemy2) return;
+
+      let dx = hero.x - enemy2.x;
+      let dy = hero.y - enemy2.y;
+      let distance = Math.sqrt(dx * dx + dy * dy);
+      let vx = (dx / distance) * enemy2.speed;
+      let vy = (dy / distance) * enemy2.speed;
+
+      enemy2.x += vx;
+      enemy2.y += vy;
+    }
+
     function startChasingHero() {
       // console.log("Chasing hero now");
       if (enemy) {
@@ -417,11 +453,13 @@
       updateSpectators();
       updateHeroPosition();
       updateEnemyPosition();
+      updateEnemy2Position();
       updateHeroCollisionCounter();
 
       // количество пропущеных зрителей после которых выходит охранник
       if (nonCollidedSpectators >= 2 && !enemy) {
         createEnemy();
+        createEnemy2();
         console.log("Check!");
       }
 
@@ -434,7 +472,75 @@
       followSpectator();
     }
 
+    // function handleMouseInput() {
+    //   canvas.addEventListener("click", (event) => {
+    //     const mouseX = event.clientX - canvas.getBoundingClientRect().left;
+    //     const mouseY = event.clientY - canvas.getBoundingClientRect().top;
+
+    //     // Вычисляем направление движения героя
+    //     const dx = mouseX - hero.x;
+    //     const dy = mouseY - hero.y;
+    //     const distance = Math.sqrt(dx * dx + dy * dy);
+    //     const vx = (dx / distance) * hero.speed;
+    //     const vy = (dy / distance) * hero.speed;
+
+    //     // При клике левой кнопкой мыши герой двигается к указателю мыши
+    //     if (event.button === 0) {
+    //       hero.x += vx;
+    //       hero.y += vy;
+    //     }
+    //     // При клике правой кнопкой мыши герой двигается в противоположную сторону
+    //     else if (event.button === 2) {
+    //       hero.x -= vx;
+    //       hero.y -= vy;
+    //     }
+    //   });
+
+
+    let heroMoving = false;
+    let mouseX = 0;
+    let mouseY = 0;
+
+    let movementInterval = null; // Объявляем переменную для хранения интервала движения героя
+
+    function handleMouseInput() {
+      canvas.addEventListener("click", (event) => {
+        const clickX = event.clientX - canvas.getBoundingClientRect().left;
+        const clickY = event.clientY - canvas.getBoundingClientRect().top;
+
+        if (movementInterval) {
+          // Если уже есть активный интервал движения, просто продолжаем его
+          clearInterval(movementInterval);
+        }
+
+        movementInterval = setInterval(() => {
+          const dx = clickX - hero.x;
+          const dy = clickY - hero.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          const speed = 22;
+
+          const vx = (dx / distance) * speed;
+          const vy = (dy / distance) * speed;
+
+          hero.x += vx;
+
+          hero.y += vy;
+
+          if (Math.abs(hero.x - clickX) < speed && Math.abs(hero.y - clickY) < speed) {
+            clearInterval(movementInterval);
+            movementInterval = null; // Очищаем переменную, чтобы снова можно было кликнуть и переместить героя
+          }
+        }, 1000 / 60);
+      });
+    }
+
+
+
+
+
+
     function handleInput() {
+      handleMouseInput();
       window.addEventListener("keydown", (e) => {
         keysPressed[e.key] = true;
       });
@@ -443,6 +549,8 @@
         keysPressed[e.key] = false;
       });
     }
+
+
 
     function gameLoop() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
