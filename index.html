@@ -1,33 +1,54 @@
 <!-- текущий код -->
-<!-- структурированный код, всё работает -->
+<!-- структурированный код, мультиввод -->
+
 <!DOCTYPE html>
 <html>
 
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Game</title>
   <style>
     * {
       margin: 0;
       padding: 0;
+      overflow: hidden;
     }
 
     #canvas {
       background-color: #f8f8f8;
       display: block;
       margin: 0 auto;
+      width: 100%;
+      height: 100%;
+
     }
   </style>
 </head>
 
 <body>
-  <canvas id="canvas" width="800" height="600"></canvas>
+  <canvas id="canvas"></canvas>
 
   <script>
     let canvas = document.getElementById("canvas");
     let ctx = canvas.getContext("2d");
 
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+
+    window.addEventListener('resize', function () {
+      resizeCanvas();
+    });
+
+    // Вызовите resizeCanvas() один раз при загрузке страницы
+    resizeCanvas();
+
     let keysPressed = {};
     let seats = new Array(200).fill(false);
     let spectators = [];
+    let topScore = 0;
 
     let hero = {
       x: canvas.width - 245,
@@ -37,6 +58,7 @@
     };
 
     let enemy = null;
+    let enemy2 = null;
 
     function createEnemy() {
       enemy = {
@@ -45,6 +67,16 @@
         radius: 8,
         speed: 1.5,
         color: "#000000",
+      };
+    }
+
+    function createEnemy2() {
+      enemy2 = {
+        x: 150,
+        y: 150,
+        radius: 8,
+        speed: 2.5,
+        color: "#FF0000",
       };
     }
 
@@ -127,6 +159,15 @@
       }
     }
 
+    function drawEnemy2() {
+      if (enemy2) {
+        ctx.fillStyle = enemy2.color;
+        ctx.beginPath();
+        ctx.arc(enemy2.x, enemy2.y, enemy2.radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
     let potentialSpectators = []; // Массив для зрителей, ожидающих появления
     let spectatorInterval; // Будем хранить ссылку на интервал
     let spectatorIdCounter = 0; // Счетчик для уникальных идентификаторов зрителей
@@ -175,10 +216,15 @@
 
     function drawScene() {
       // Отрисовка фона и других элементов сцены
-      drawStage(100, 50, 600, 100);
-      drawSeats(100, 200, 10, 20);
-      drawEntrance(canvas.width - 30, 250, 15, 35); // Верхний вход
-      drawEntrance(canvas.width - 30, canvas.height - 50, 15, 35); // Нижний вход
+      // drawStage(100, 50, 600, 100);
+      // drawSeats(100, 200, 10, 20);
+      // drawEntrance(canvas.width - 30, 250, 15, 35); // Верхний вход
+      // drawEntrance(canvas.width - 30, canvas.height - 50, 15, 35); // Нижний вход
+      drawStage(canvas.width * 0.125, canvas.height * 0.083, canvas.width * 0.75, canvas.height * 0.166);
+      drawSeats(canvas.width * 0.125, canvas.height * 0.333, 10, 20);
+      drawEntrance(canvas.width * 0.938, canvas.height * 0.208, canvas.width * 0.019, canvas.height * 0.058); // Верхний вход
+      drawEntrance(canvas.width * 0.938, canvas.height * 0.833, canvas.width * 0.019, canvas.height * 0.058); // Нижний вход
+
 
       // Отрисовка зрителей
       drawSpectators();
@@ -186,6 +232,7 @@
       // Отрисовка героя и врага
       drawHero();
       drawEnemy();
+      drawEnemy2();
 
       // Отрисовка счетчиков и других элементов интерфейса
       ctx.fillStyle = "#000";
@@ -297,6 +344,11 @@
       if (enemy && checkCollisionWithEnemy(hero, enemy)) {
         console.log("Ooops!");
       }
+      // Проверяем коллизию с вторым врагом
+      if (enemy2 && checkCollisionWithEnemy(hero, enemy2)) {
+        console.log("Oops, collided with enemy2!");
+        // Добавьте здесь действия при коллизии с вторым врагом, например, сброс игры или уменьшение очков здоровья героя
+      }
       // Проверяем коллизии с зрителями
       spectators.forEach((spectator) => {
         if (!spectator.isSeated && checkCollisionWithHero(spectator)) {
@@ -304,6 +356,34 @@
           collidedSpectators++; // Увеличиваем счетчик вошедших в коллизию зрителей
         }
       });
+    }
+
+    function updateHeroPositionTouch() {
+      // Обновляем позицию героя на основе координат касания
+      const dx = touchX - hero.x;
+      const dy = touchY - hero.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      const speed = 5; // Скорость перемещения героя
+
+      // Перемещаем героя к координатам касания с определенной скоростью
+      if (distance > speed) {
+        hero.x += (dx / distance) * speed;
+        hero.y += (dy / distance) * speed;
+      } else {
+        // Если расстояние меньше скорости, перемещаем героя непосредственно в точку касания
+        hero.x = touchX;
+        hero.y = touchY;
+      }
+      spectators.forEach((spectator) => {
+        if (!spectator.isSeated && checkCollisionWithHero(spectator)) {
+          spectator.color = "green"; // При коллизии перекрашиваем зрителя в зеленый
+          collidedSpectators++; // Увеличиваем счетчик вошедших в коллизию зрителей
+        }
+      });
+
+      // Ограничиваем позицию героя в пределах холста
+      hero.x = Math.max(hero.radius, Math.min(canvas.width - hero.radius, hero.x));
+      hero.y = Math.max(hero.radius, Math.min(canvas.height - hero.radius, hero.y));
     }
 
     function checkCollisionWithSpectators(enemy) {
@@ -328,6 +408,7 @@
     }
 
     function updateEnemyPosition() {
+
       if (!enemy) return; // Если враг не существует, выходим из функции
 
       // Находим направление к герою
@@ -357,6 +438,19 @@
       });
     }
 
+    function updateEnemy2Position() {
+      if (!enemy2) return;
+
+      let dx = hero.x - enemy2.x;
+      let dy = hero.y - enemy2.y;
+      let distance = Math.sqrt(dx * dx + dy * dy);
+      let vx = (dx / distance) * enemy2.speed;
+      let vy = (dy / distance) * enemy2.speed;
+
+      enemy2.x += vx;
+      enemy2.y += vy;
+    }
+
     function startChasingHero() {
       // console.log("Chasing hero now");
       if (enemy) {
@@ -370,6 +464,7 @@
 
     // здесь мы проверяем был ли зритель в коллизии с героем или нет
     function followSpectator() {
+      if (!followingSpectator) return;
       if (followingSpectator && followingSpectator.color !== "green") {
         enemy.x = followingSpectator.x;
         enemy.y = followingSpectator.y;
@@ -377,6 +472,7 @@
     }
 
     function startFollowingTimer() {
+
       timer = setTimeout(() => {
         followingSpectator = null;
         // Здесь можно добавить код для возвращения к преследованию героя
@@ -384,15 +480,44 @@
       }, 4000); // 4 секунды
     }
 
+    let requestAnimationFrameHandle;
+
+    // function gameOver() {
+    //   let topScore = Math.max(collidedSpectators, nonCollidedSpectators); // Находим максимальное значение между collidedSpectators и nonCollidedSpectators
+
+    //   ctx.clearRect(0, 0, canvas.width, canvas.height); // Очищаем canvas
+
+    //   // Отменяем анимацию
+    //   if (requestAnimationFrameHandle) {
+    //     cancelAnimationFrame(requestAnimationFrameHandle);
+    //   }
+
+    //   // Выводим информацию о результате игры
+    //   ctx.fillStyle = "#000";
+    //   ctx.font = "30px Arial";
+    //   ctx.fillText(`Top Score: ${topScore}`, canvas.width / 2 - 100, canvas.height / 2);
+    // }
+
+    function gameOver() {
+      cancelAnimationFrame(requestAnimationFrameHandle);
+      topScore = nonCollidedSpectators;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#000";
+      ctx.font = "30px Arial";
+      ctx.fillText(`Game Over`, canvas.width / 2 - 70, canvas.height / 2);
+      ctx.fillText(`TopScore: ${topScore}`, canvas.width / 2 - 90, canvas.height / 2 + 40);
+    }
+
     function resetGame() {
       // Сбрасываем все переменные и счетчики в начальное состояние
       potentialSpectators = [];
       collidedSpectators = 0;
       nonCollidedSpectators = 0;
-      heroCollisionCounter = 60000; // Возвращаем счетчик коллизий героя с врагом к изначальному значению
+      heroCollisionCounter = 60; // Возвращаем счетчик коллизий героя с врагом к изначальному значению
       hero.x = canvas.width - 245; // Возвращаем героя в изначальную позицию
       hero.y = 350;
       enemy = null; // Убираем врага с поля
+      enemy2 = null;
 
       // Очищаем массив сидений
       seats.fill(false);
@@ -411,18 +536,106 @@
           resetGame();
         }
       }
+      // Проверяем коллизию с вторым врагом
+      if (enemy2 && checkCollisionWithEnemy(hero, enemy2)) {
+        heroCollisionCounter--; // Уменьшаем счетчик при коллизии с врагом
+        if (heroCollisionCounter <= 0) {
+          // Если счетчик достиг нуля или меньше, перезапускаем игру
+          resetGame();
+        }
+      }
     }
+
+    // function updateGame() {
+    //   updateSpectators();
+    //   // updateHeroPositionTouch();
+    //   // updateHeroPosition();
+    //   updateEnemyPosition();
+    //   updateEnemy2Position();
+    //   updateHeroCollisionCounter();
+
+    //   // количество пропущеных зрителей после которых выходит охранник
+    //   if (nonCollidedSpectators >= 2 && !enemy) {
+    //     createEnemy();
+    //     console.log("Check!");
+    //   }
+    //   if (nonCollidedSpectators >= 4 && !enemy2) {
+    //     createEnemy2();
+    //     console.log("Check!");
+    //   }
+
+    //   let collidedSpectator = checkCollisionWithSpectators(enemy);
+    //   if (collidedSpectator !== null) {
+    //     followingSpectator = collidedSpectator;
+    //     startFollowingTimer();
+    //   }
+
+    //   followSpectator();
+
+    //   if (
+    //     heroCollisionCounter <= 0 ||
+    //     nonCollidedSpectators + collidedSpectators >= spectators.length
+    //   ) {
+    //     gameOver();
+    //     return; // Прерываем игровой цикл
+    //   }
+    // }
+    // function updateGame() {
+    //   updateSpectators();
+    //   updateHeroPosition();
+    //   updateEnemyPosition();
+    //   updateHeroCollisionCounter();
+
+    //   // Если все зрители сели или у героя закончились коллизии с врагом, завершаем игру
+    //   if (spectators.every((s) => s.isSeated) || heroCollisionCounter <= 0) {
+    //     gameOver();
+    //     return; // Останавливаем дальнейшее выполнение updateGame
+    //   }
+
+    //   // Создаем первого врага при non-collided >= 2
+    //   if (nonCollidedSpectators >= 2 && !enemy) {
+    //     createEnemy();
+    //     console.log("Enemy1 created!");
+    //   }
+
+    //   // Создаем второго врага при non-collided >= 4
+    //   if (nonCollidedSpectators >= 4 && !enemy2) {
+    //     createEnemy2();
+    //     console.log("Enemy2 created!");
+    //   }
+
+    //   let collidedSpectator = checkCollisionWithSpectators(enemy);
+    //   if (collidedSpectator) {
+    //     followingSpectator = collidedSpectator;
+    //     startFollowingTimer();
+    //   }
+
+    //   followSpectator();
+    // }
 
     function updateGame() {
       updateSpectators();
       updateHeroPosition();
       updateEnemyPosition();
+      updateEnemy2Position();
       updateHeroCollisionCounter();
 
-      // количество пропущеных зрителей после которых выходит охранник
+      // Если все зрители сели или у героя закончились коллизии с врагом, завершаем игру
+      if (spectators.every((s) => s.isSeated) || heroCollisionCounter <= 0) {
+        gameOver();
+        return; // Останавливаем дальнейшее выполнение updateGame
+      }
+
+      // Создаем первого врага при non-collided >= 2
       if (nonCollidedSpectators >= 2 && !enemy) {
         createEnemy();
-        console.log("Check!");
+        console.log("Enemy1 created!");
+      }
+
+      // Создаем второго врага при non-collided >= 4
+      if (nonCollidedSpectators >= 4 && !enemy2) {
+        createEnemy2();
+        console.log("Enemy2 created!");
       }
 
       let collidedSpectator = checkCollisionWithSpectators(enemy);
@@ -434,7 +647,73 @@
       followSpectator();
     }
 
-    function handleInput() {
+    function updateHero() {
+      if (isTouchDevice()) {
+        updateHeroPositionTouch();
+      } else {
+        updateHeroPosition();
+      }
+    }
+
+    function isTouchDevice() {
+      return "ontouchstart" in window || navigator.maxTouchPoints;
+    }
+
+    let heroMoving = false;
+    let mouseX = 0;
+    let mouseY = 0;
+
+    let movementInterval = null; // Объявляем переменную для хранения интервала движения героя
+
+    function handleMouseInput() {
+      canvas.addEventListener("click", (event) => {
+        const clickX = event.clientX - canvas.getBoundingClientRect().left;
+        const clickY = event.clientY - canvas.getBoundingClientRect().top;
+
+        if (movementInterval) {
+          // Если уже есть активный интервал движения, просто продолжаем его
+          clearInterval(movementInterval);
+        }
+
+        movementInterval = setInterval(() => {
+          const dx = clickX - hero.x;
+          const dy = clickY - hero.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          const speed = 22;
+
+          const vx = (dx / distance) * speed;
+          const vy = (dy / distance) * speed;
+
+          hero.x += vx;
+
+          hero.y += vy;
+
+          if (Math.abs(hero.x - clickX) < speed && Math.abs(hero.y - clickY) < speed) {
+            clearInterval(movementInterval);
+            movementInterval = null; // Очищаем переменную, чтобы снова можно было кликнуть и переместить героя
+          }
+        }, 1000 / 60);
+      });
+    }
+    // Обрабатываем тач скрин
+    let touchX = 0;
+    let touchY = 0;
+
+    function handleTouchInput() {
+      canvas.addEventListener("touchstart", function (event) {
+        // Получаем координаты касания
+        touchX = event.touches[0].clientX - canvas.getBoundingClientRect().left;
+        touchY = event.touches[0].clientY - canvas.getBoundingClientRect().top;
+      });
+
+      canvas.addEventListener("touchmove", function (event) {
+        // Получаем координаты касания
+        touchX = event.touches[0].clientX - canvas.getBoundingClientRect().left;
+        touchY = event.touches[0].clientY - canvas.getBoundingClientRect().top;
+      });
+    }
+
+    function handleKeyboardInput() {
       window.addEventListener("keydown", (e) => {
         keysPressed[e.key] = true;
       });
@@ -444,9 +723,22 @@
       });
     }
 
+    function handleInput() {
+      if (isTouchDevice()) {
+        // Для сенсорных устройств
+        handleTouchInput();
+      } else {
+        // Для клавиатуры и мыши
+        handleKeyboardInput();
+        handleMouseInput();
+      }
+
+    }
+
     function gameLoop() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       drawScene();
+      updateHero()
       updateGame();
       // handleInput();
       requestAnimationFrame(gameLoop);
@@ -454,7 +746,8 @@
 
     handleInput();
     initializeSpectators();
-    requestAnimationFrame(gameLoop);
+    // requestAnimationFrame(gameLoop);
+    requestAnimationFrameHandle = requestAnimationFrame(gameLoop);
   </script>
 </body>
 
