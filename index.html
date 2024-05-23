@@ -48,7 +48,9 @@
     let keysPressed = {};
     let seats = new Array(200).fill(false);
     let spectators = [];
-    let topScore = 0;
+
+    let topScore = localStorage.getItem('topScore') ? parseInt(localStorage.getItem('topScore')) : 0;
+    let currentScore = 0; // Текущий счет игры
 
     let hero = {
       x: canvas.width - 245,
@@ -213,18 +215,12 @@
         }
       }, 1000); // Добавляем нового зрителя каждую секунду
     }
-
     function drawScene() {
       // Отрисовка фона и других элементов сцены
-      // drawStage(100, 50, 600, 100);
-      // drawSeats(100, 200, 10, 20);
-      // drawEntrance(canvas.width - 30, 250, 15, 35); // Верхний вход
-      // drawEntrance(canvas.width - 30, canvas.height - 50, 15, 35); // Нижний вход
       drawStage(canvas.width * 0.125, canvas.height * 0.083, canvas.width * 0.75, canvas.height * 0.166);
       drawSeats(canvas.width * 0.125, canvas.height * 0.333, 10, 20);
       drawEntrance(canvas.width * 0.938, canvas.height * 0.208, canvas.width * 0.019, canvas.height * 0.058); // Верхний вход
       drawEntrance(canvas.width * 0.938, canvas.height * 0.833, canvas.width * 0.019, canvas.height * 0.058); // Нижний вход
-
 
       // Отрисовка зрителей
       drawSpectators();
@@ -240,6 +236,8 @@
       ctx.fillText(`Collided: ${collidedSpectators}`, 10, 20);
       ctx.fillText(`Non-collided: ${nonCollidedSpectators}`, 10, 40);
       ctx.fillText(`Hero Collisions: ${heroCollisionCounter}`, 10, 60);
+      ctx.fillText(`TopScore: ${topScore}`, 10, 80); // Отображение TopScore
+      ctx.fillText(`Current Score: ${currentScore}`, 10, 100); // Отображение текущего счета
     }
 
     function checkCollisionWithHero(spectator) {
@@ -312,7 +310,9 @@
               if (!spectator.hasCollided && checkCollisionWithHero(spectator)) {
                 spectator.color = "green"; // Окрашиваем в зеленый при коллизии
                 spectator.hasCollided = true; // Отмечаем, что коллизия уже была
-                collidedSpectators++; // Увеличиваем счетчик коллизий
+                collidedSpectators++;
+                topScore++;
+                // Увеличиваем счетчик коллизий
               }
 
               // Теперь нет повторного увеличения коллизий для зрителей, которые уже вступили в коллизию
@@ -482,25 +482,16 @@
 
     let requestAnimationFrameHandle;
 
-    // function gameOver() {
-    //   let topScore = Math.max(collidedSpectators, nonCollidedSpectators); // Находим максимальное значение между collidedSpectators и nonCollidedSpectators
-
-    //   ctx.clearRect(0, 0, canvas.width, canvas.height); // Очищаем canvas
-
-    //   // Отменяем анимацию
-    //   if (requestAnimationFrameHandle) {
-    //     cancelAnimationFrame(requestAnimationFrameHandle);
-    //   }
-
-    //   // Выводим информацию о результате игры
-    //   ctx.fillStyle = "#000";
-    //   ctx.font = "30px Arial";
-    //   ctx.fillText(`Top Score: ${topScore}`, canvas.width / 2 - 100, canvas.height / 2);
-    // }
+    function updateTopScore() {
+      if (currentScore > topScore) {
+        topScore = currentScore;
+        localStorage.setItem('topScore', topScore);
+      }
+    }
 
     function gameOver() {
       cancelAnimationFrame(requestAnimationFrameHandle);
-      topScore = nonCollidedSpectators;
+      updateTopScore(); // Обновляем и сохраняем TopScore
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.fillStyle = "#000";
       ctx.font = "30px Arial";
@@ -518,6 +509,7 @@
       hero.y = 350;
       enemy = null; // Убираем врага с поля
       enemy2 = null;
+      currentScore = 0; // Сбрасываем текущий счет
 
       // Очищаем массив сидений
       seats.fill(false);
@@ -546,72 +538,6 @@
       }
     }
 
-    // function updateGame() {
-    //   updateSpectators();
-    //   // updateHeroPositionTouch();
-    //   // updateHeroPosition();
-    //   updateEnemyPosition();
-    //   updateEnemy2Position();
-    //   updateHeroCollisionCounter();
-
-    //   // количество пропущеных зрителей после которых выходит охранник
-    //   if (nonCollidedSpectators >= 2 && !enemy) {
-    //     createEnemy();
-    //     console.log("Check!");
-    //   }
-    //   if (nonCollidedSpectators >= 4 && !enemy2) {
-    //     createEnemy2();
-    //     console.log("Check!");
-    //   }
-
-    //   let collidedSpectator = checkCollisionWithSpectators(enemy);
-    //   if (collidedSpectator !== null) {
-    //     followingSpectator = collidedSpectator;
-    //     startFollowingTimer();
-    //   }
-
-    //   followSpectator();
-
-    //   if (
-    //     heroCollisionCounter <= 0 ||
-    //     nonCollidedSpectators + collidedSpectators >= spectators.length
-    //   ) {
-    //     gameOver();
-    //     return; // Прерываем игровой цикл
-    //   }
-    // }
-    // function updateGame() {
-    //   updateSpectators();
-    //   updateHeroPosition();
-    //   updateEnemyPosition();
-    //   updateHeroCollisionCounter();
-
-    //   // Если все зрители сели или у героя закончились коллизии с врагом, завершаем игру
-    //   if (spectators.every((s) => s.isSeated) || heroCollisionCounter <= 0) {
-    //     gameOver();
-    //     return; // Останавливаем дальнейшее выполнение updateGame
-    //   }
-
-    //   // Создаем первого врага при non-collided >= 2
-    //   if (nonCollidedSpectators >= 2 && !enemy) {
-    //     createEnemy();
-    //     console.log("Enemy1 created!");
-    //   }
-
-    //   // Создаем второго врага при non-collided >= 4
-    //   if (nonCollidedSpectators >= 4 && !enemy2) {
-    //     createEnemy2();
-    //     console.log("Enemy2 created!");
-    //   }
-
-    //   let collidedSpectator = checkCollisionWithSpectators(enemy);
-    //   if (collidedSpectator) {
-    //     followingSpectator = collidedSpectator;
-    //     startFollowingTimer();
-    //   }
-
-    //   followSpectator();
-    // }
 
     function updateGame() {
       updateSpectators();
@@ -645,6 +571,8 @@
       }
 
       followSpectator();
+
+      currentScore = collidedSpectators; // Обновляем текущий счет
     }
 
     function updateHero() {
